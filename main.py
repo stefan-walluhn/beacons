@@ -8,7 +8,7 @@ from beacon.scenes import TestScene
 
 
 def handle_irq(pin):
-    def _bouncing(pin):
+    def _bouncing():
         for _ in range(10):
             if pin.value() == 1:
                 return True
@@ -16,7 +16,7 @@ def handle_irq(pin):
 
         return False
 
-    if not _bouncing(pin):
+    if not _bouncing():
         print('trigger')
 
 
