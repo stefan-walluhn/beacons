@@ -9,10 +9,10 @@ from beacon.scenes import TestScene
 
 def handle_irq(pin):
     def _bouncing():
-        for _ in range(10):
+        for i in range(14):
             if pin.value() == 1:
                 return True
-            time.sleep_ms(10)
+            time.sleep_ms(i)
 
         return False
 
