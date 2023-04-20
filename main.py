@@ -16,8 +16,10 @@ def handle_irq(pin):
 
         return False
 
+    pin.irq(handler=None)
     if not _bouncing():
         print('trigger')
+    pin.irq(handler=handle_irq)
 
 
 if __name__ == '__main__':
