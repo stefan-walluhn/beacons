@@ -1,38 +1,144 @@
-import time
 import uasyncio
 
+from random import randint
 
-class TestScene:
-    def __init__(self, led1, led2, led3):
-        self._led1, self._led2, self._led3 = led1, led2, led3
 
-    def start(self):
-        uasyncio.run(
-            uasyncio.gather(self._led1.fade_color_async(0x0000ff),
-                            self._led2.fade_color_async(0xff0000),
-                            self._led3.fade_color_async(0x00cc00))
+class Scenes:
+    def __init__(self, led_floor, *led_leaves):
+        self._loop = uasyncio.new_event_loop()
+
+        self._scenes = (
+            DaylightFlickering(led_floor, *led_leaves),
+            ThunderStorm(led_floor, *led_leaves),
+            JapanDaemonParade(led_floor, *led_leaves),
+            Sunset(led_floor, *led_leaves),
+        )
+        self._current = 0
+
+        self._loop.create_task(self._scenes[self._current].run())
+
+    def run_forever(self):
+        self._loop.run_forever()
+
+    def next(self):
+        self._loop.stop()
+        self._loop.close()
+        self._loop = uasyncio.new_event_loop()
+
+        self._current = (self._current + 1) % len(self._scenes)
+        print('starting scene '
+              f'{self._scenes[self._current].__class__.__name__}')
+        self._loop.create_task(self._scenes[self._current].run())
+
+
+class Scene:
+    def __init__(self, led_floor, *led_leaves):
+        self._led_floor, self._led_leaves = led_floor, led_leaves
+
+    async def run(self):
+        raise NotImplementedError('Scene must implement run coro')
+
+
+class DaylightFlickering(Scene):
+    async def flicker(self, led):
+        while True:
+            await led.fade_async(0xff9933, duration=randint(1, 5))
+            await led.fade_async(0xffff33, duration=randint(1, 5))
+
+    async def run(self):
+        await self._led_floor.fade_async(0x996600, duration=5)
+        await uasyncio.gather(
+            self._led_leaves[0].fade_async(0xff9933),
+            self._led_leaves[1].fade_async(0xffff33, duration=2)
+        )
+        await uasyncio.gather(self.flicker(self._led_leaves[0]),
+                              self.flicker(self._led_leaves[1]))
+
+
+class ThunderStorm(Scene):
+    async def lightning(self, led):
+        while True:
+            await uasyncio.sleep(randint(10, 60))
+            for _ in range(randint(1, 6)):
+                color = led.color
+                led.set_color(0xffffff)
+                await uasyncio.sleep_ms(randint(10, 150))
+                led.set_color(color)
+                await uasyncio.sleep_ms(randint(100, 250))
+
+    async def run(self):
+        await uasyncio.gather(
+            self._led_floor.fade_async(0x112200, duration=5),
+            self._led_leaves[0].fade_async(0x112200, duration=5),
+            self._led_leaves[1].fade_async(0x112200, duration=5),
         )
 
-        time.sleep(1)
+        await uasyncio.gather(self.lightning(self._led_floor),
+                              self.lightning(self._led_leaves[0]),
+                              self.lightning(self._led_leaves[1]))
 
-        uasyncio.run(
-            uasyncio.gather(self._led1.fade_color_async(0xff0000),
-                            self._led2.fade_color_async(0x0000cc),
-                            self._led3.fade_color_async(0xcc00cc))
+
+class JapanDaemonParade(Scene):
+    async def flicker_leaves(self, leds):
+        while True:
+            duration = randint(1, 5)
+            await leds[0].fade_async(0xcc9900, duration=duration)
+            await leds[1].fade_async(0xff0000, duration=duration)
+            duration = randint(1, 5)
+            await leds[0].fade_async(0xff0000, duration=duration)
+            await leds[1].fade_async(0xcc9900, duration=duration)
+
+    async def flicker_floor(self, led):
+        while True:
+            await led.fade_async(0x660066, duration=randint(1, 5))
+            await led.fade_async(0x3300cc, duration=randint(1, 5))
+
+    async def run(self):
+        await uasyncio.gather(
+            self._led_floor.fade_async(0x3300cc, duration=5),
+            self._led_leaves[0].fade_async(0xff0000, duration=5),
+            self._led_leaves[1].fade_async(0xcc9900, duration=5),
         )
 
-        time.sleep(1)
+        await uasyncio.gather(self.flicker_leaves(self._led_leaves),
+                              self.flicker_floor(self._led_floor))
 
-        uasyncio.run(
-            uasyncio.gather(self._led1.fade_color_async(0xff9900),
-                            self._led2.fade_color_async(0xff9900),
-                            self._led3.fade_color_async(0xff9900))
+
+class Sunset(Scene):
+    async def sleep_forever(self):
+        while True:
+            await uasyncio.sleep(1)
+
+    async def run(self):
+        await uasyncio.gather(
+            self._led_floor.fade_async(0xffff33),
+            self._led_leaves[0].fade_async(0xffff33),
+            self._led_leaves[1].fade_async(0xffff33)
         )
 
-        time.sleep(1)
-
-        uasyncio.run(
-            uasyncio.gather(self._led1.fade_color_async(0, duration=3),
-                            self._led2.fade_color_async(0, duration=5),
-                            self._led3.fade_color_async(0, duration=5))
+        await uasyncio.gather(
+            self._led_floor.fade_async(0xfb8835, duration=20),
+            self._led_leaves[0].fade_async(0xfeb913, duration=10),
+            self._led_leaves[1].fade_async(0xffd51a, duration=20)
         )
+
+        await uasyncio.gather(
+            self._led_floor.fade_async(0x79432b, duration=30),
+            self._led_leaves[0].fade_async(0xff2211, duration=30),
+            self._led_leaves[1].fade_async(0x5196b7, duration=40),
+        )
+
+        await uasyncio.gather(
+            self._led_floor.fade_async(0x000000, duration=20),
+            self._led_leaves[0].fade_async(0x000033, duration=40),
+            self._led_leaves[1].fade_async(0x040033, duration=30)
+        )
+
+        await uasyncio.gather(
+            self._led_leaves[0].fade_async(0x000000, duration=20),
+            self._led_leaves[1].fade_async(0x000000, duration=20)
+        )
+
+        # hacky workaround to not let scene finish
+        # and keep async loop in action
+        await self.sleep_forever()

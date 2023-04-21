@@ -25,6 +25,10 @@ class RGB_LED:
             ) for c in range(3)
         )
 
+    @property
+    def color(self):
+        return utils.rgb_to_color(self.color_rgb)
+
     def set_color(self, color):
         rgb = utils.color_to_rgb(color)
 
@@ -33,10 +37,10 @@ class RGB_LED:
                 utils.uint8_to_uduty16(rgb[c])
             )
 
-    def fade_color(self, color, duration=1):
+    def fade(self, color, duration=1):
         uasyncio.run(self.fade_color_async(color, duration))
 
-    async def fade_color_async(self, color, duration=1):
+    async def fade_async(self, color, duration=1):
         _step_ms = duration  # duration / 1000 (steps) * 1000 (ms)
         _start_color_rgb = self.color_rgb
         _target_color_rgb = utils.color_to_rgb(color)
