@@ -1,4 +1,5 @@
-import uasyncio
+import asyncio
+import logging
 
 from machine import Pin, PWM
 
@@ -38,9 +39,11 @@ class RGB_LED:
             )
 
     def fade(self, color, duration=1):
-        uasyncio.run(self.fade_color_async(color, duration))
+        asyncio.run(self.fade_color_async(color, duration))
 
     async def fade_async(self, color, duration=1):
+        logging.debug(f'fading {self} to {color:#08x}')
+
         _step_ms = duration  # duration / 1000 (steps) * 1000 (ms)
         _start_color_rgb = self.color_rgb
         _target_color_rgb = utils.color_to_rgb(color)
@@ -53,4 +56,5 @@ class RGB_LED:
                 _start_color_rgb[c] + int(_distance_rgb[c] * (i + 1) / 1000) for c in range(3)
             )
             self.set_color(utils.rgb_to_color(_step_rgb))
-            await uasyncio.sleep_ms(_step_ms)
+            await asyncio.sleep_ms(_step_ms)
+        logging.debug(f'faded {self} to {color:#08x}')
