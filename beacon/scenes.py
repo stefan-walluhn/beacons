@@ -56,13 +56,14 @@ class DaylightFlickering(Scene):
             self._led_leaves[1].fade_async(0xffff33, duration=2)
         )
         await asyncio.gather(self.flicker(self._led_leaves[0]),
-                              self.flicker(self._led_leaves[1]))
+                             self.flicker(self._led_leaves[1]))
 
 
 class ThunderStorm(Scene):
     async def lightning(self, led):
         while True:
-            await asyncio.sleep(randint(10, 60))
+            await self._sleep(randint(10, 60))
+
             for _ in range(randint(1, 6)):
                 led.set_color(0xffffff)
                 await asyncio.sleep_ms(randint(10, 150))
@@ -77,8 +78,15 @@ class ThunderStorm(Scene):
         )
 
         await asyncio.gather(self.lightning(self._led_floor),
-                              self.lightning(self._led_leaves[0]),
-                              self.lightning(self._led_leaves[1]))
+                             self.lightning(self._led_leaves[0]),
+                             self.lightning(self._led_leaves[1]))
+
+    async def _sleep(self, t):
+        # cut sleep awaitable in small chunks, loop.stop() is unable to
+        # terminate running task. newly created tasks will be affected by this
+        # sleep.
+        for _ in range(1000):
+            await asyncio.sleep_ms(t)
 
 
 class JapanDaemonParade(Scene):
@@ -104,7 +112,7 @@ class JapanDaemonParade(Scene):
         )
 
         await asyncio.gather(self.flicker_leaves(self._led_leaves),
-                              self.flicker_floor(self._led_floor))
+                             self.flicker_floor(self._led_floor))
 
 
 class Sunset(Scene):

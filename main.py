@@ -2,7 +2,6 @@ import logging
 import time
 
 from machine import Pin
-from micropython import schedule
 
 from beacon.led import get_led
 from beacon.scenes import Scenes

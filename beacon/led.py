@@ -53,7 +53,9 @@ class RGB_LED:
 
         for i in range(1000):
             _step_rgb = tuple(
-                _start_color_rgb[c] + int(_distance_rgb[c] * (i + 1) / 1000) for c in range(3)
+                map(lambda c: (_start_color_rgb[c] +
+                               int(_distance_rgb[c] * (i + 1) / 1000)),
+                    range(3))
             )
             self.set_color(utils.rgb_to_color(_step_rgb))
             await asyncio.sleep_ms(_step_ms)
