@@ -85,8 +85,8 @@ class ThunderStorm(Scene):
         # cut sleep awaitable in small chunks, loop.stop() is unable to
         # terminate running task. newly created tasks will be affected by this
         # sleep.
-        for _ in range(1000):
-            await asyncio.sleep_ms(t)
+        for _ in range(100):
+            await asyncio.sleep_ms(t * 10)
 
 
 class JapanDaemonParade(Scene):
